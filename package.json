@@ -1,0 +1,37 @@
+{
+  "name": "rest-rcon",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "babel": "babel src -d build",
+    "start": "node index.js",
+    "watch": "nodemon index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "chalk": "^2.4.2",
+    "cli-table": "^0.3.1",
+    "cors": "^2.8.4",
+    "dotenv": "^4.0.0",
+    "express": "^4.16.2",
+    "fs": "0.0.1-security",
+    "gamedig": "^2.0.14",
+    "log-update": "^3.2.0",
+    "mathjs": "^5.8.0",
+    "rcon": "^1.0.3",
+    "request": "^2.83.0",
+    "request-debug": "^0.2.0",
+    "simple-statistics": "^7.0.2",
+    "socket.io": "^2.1.1",
+    "sparkly": "^5.0.0",
+    "util": "^0.10.3"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.3",
+    "babel-preset-es2015": "^6.24.1"
+  }
+}
