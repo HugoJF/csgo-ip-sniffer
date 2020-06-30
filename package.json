@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "babel": "babel src -d build",
-    "start": "node index.js",
+    "start": "node build/index.js",
     "watch": "nodemon index.js"
   },
   "author": "",
@@ -16,17 +16,18 @@
     "cli-table": "^0.3.1",
     "cors": "^2.8.4",
     "dotenv": "^4.0.0",
-    "express": "^4.16.2",
+    "express": "^4.17.1",
     "fs": "0.0.1-security",
-    "gamedig": "^2.0.14",
-    "log-update": "^3.2.0",
+    "gamedig": "^2.0.20",
+    "log-update": "^4.0.0",
     "mathjs": "^5.8.0",
     "rcon": "^1.0.3",
-    "request": "^2.83.0",
+    "request": "^2.88.2",
     "request-debug": "^0.2.0",
-    "simple-statistics": "^7.0.2",
-    "socket.io": "^2.1.1",
+    "simple-statistics": "^7.1.0",
+    "socket.io": "^2.3.0",
     "sparkly": "^5.0.0",
+    "term-size": "^2.2.0",
     "util": "^0.10.3"
   },
   "devDependencies": {
