@@ -7,13 +7,15 @@ import sparkly from "sparkly";
 import Table from 'cli-table';
 import termSize from "term-size";
 
-const historySize = 10;
 
-let queryServersTimer = undefined;
 let servers = [];
 
 const frames = ['-', '\\', '|', '/'];
 const tick = '√';
+const cross = '×';
+const noName = '?';
+const ellipsis = '…';
+const historySize = 10;
 
 const options = {
     json: true,
@@ -36,53 +38,46 @@ const processServersInIp = (err, res, body) => {
         return;
     }
 
-    if (body.response.success !== true) {
+    if (body.response.success === false) {
         console.log('Error while requesting API information');
         return;
     }
 
-    let svs = body.response.servers;
+    body.response.servers
+        .map((server) => (server.addr))
+        .forEach((addr) => {
+            servers[addr] = {
+                history: Array(historySize).fill(0),
+            };
+            updateServer(addr);
+        });
 
-    svs = svs.map((server) => (server.addr));
-
-    svs.forEach((server) => {
-        servers[server] = {
-            history: Array(historySize).fill(0),
-        };
-    });
-
-    startTimer();
+    startTimers();
 };
 
-function startTimer() {
+function startTimers() {
     setInterval(render, 100);
     setInterval(queryServers, 1000);
 }
 
 function fetchSessionForIp(ip, callback) {
-    request.get('http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr=' + ip, options, callback);
+    request.get(`http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr=${ip}`, options, callback);
 }
 
 function splitAddress(address) {
     return address.split(':');
 }
 
-function clamp(value, min, max) {
-    return math.max(math.min(max, value), min);
-}
-
 function rotate(value, min, max) {
-    if (value > max) return min;
-
-    return value;
+    return (value > max) ? min : value;
 }
 
-function increase(value) {
+function increment(value) {
     return value === undefined ? 0 : value + 1;
 }
 
 function render() {
-    const {rows, columns} = termSize();
+    const {columns} = termSize();
     const checkColumns = 3;
     const playersColumns = 13;
     const sparkColumns = 13;
@@ -93,32 +88,32 @@ function render() {
         colWidths: [checkColumns, nameColumns, playersColumns, sparkColumns]
     });
 
-    Object.keys(servers).forEach((addr) => {
-        let server = servers[addr];
-        let high = (text) => server.querying ? chalk.blue(text) : (server.failed ? chalk.red(text) : text);
+    for (let server of Object.values(servers)) {
+        let {querying, failed, frame, name, players, history, maxPlayers} = server;
 
-        server.frame = rotate(increase(server.frame), 0, frames.length - 1);
+        let highlight = (text) => querying ? chalk.blue(text) : (failed ? chalk.red(text) : text);
+        let status = querying ? frames[frame] : failed ? cross : tick;
+        let spark = sparkly(history, {minimum: 0, maximum: maxPlayers});
 
-        let status = server.querying ? frames[server.frame] : server.failed ? '×' : tick;
-        let name = server.name || '?';
-        let players = `${server.players || '0'} players`;
-        let history = sparkly(server.history, {minimum: 0, maximum: server.maxPlayers});
+        server.frame = rotate(increment(frame), 0, frames.length - 1);
+        players = `${players || '0'} players`;
 
+        name = name || noName;
         if (name.length > nameColumns - 2) {
-            name = name.slice(0, nameColumns - 3) + '…';
+            name = name.slice(0, nameColumns - 3) + ellipsis;
         }
 
         let info = [
             chalk.green(status),
             name,
             players,
-            history,
+            spark,
         ];
 
-        table.push(info.map((text) => high(text)));
-    });
+        table.push(info.map(highlight));
+    }
 
-    let total = Object.values(servers).reduce((acc, server) => server.players ? acc + server.players : acc, 0);
+    let total = Object.values(servers).reduce((acc, {players}) => acc + (players || 0), 0);
 
     table.push(['', '', '', '']);
     table.push(['', 'TOTAL', `${total} players`, '']);
@@ -126,49 +121,58 @@ function render() {
     logUpdate(table.toString());
 }
 
-function queryServers() {
-    let now = (new Date()).getTime();
+async function updateServer(addr) {
+    let server = servers[addr];
+    let now = (new Date).getTime();
+    let [host, port] = splitAddress(addr);
 
-    let oldest = Object.keys(servers).map((server) => {
-        let s = servers[server];
+    try {
 
-        s.addr = server;
-        s.age = s.lastUpdated === undefined ? now : now - s.lastUpdated;
+        server.lastUpdated = now;
+        server.querying = true;
 
-        return s;
-    }).sort((a, b) => b.age - a.age);
+        let state = await Gamedig.query({
+            type: 'csgo',
+            host: host,
+            port: port,
+            socketTimeout: 1000,
+        });
 
-    oldest = oldest[0].addr;
-
-    let parts = splitAddress(oldest);
-    let server = servers[oldest];
-
-    server.lastUpdated = now;
-    server.querying = true;
-
-    Gamedig.query({
-        type: 'csgo',
-        host: parts[0],
-        port: parts[1],
-        socketTimeout: 1000,
-    }).then((state) => {
         let players = state.players.length;
         let maxPlayers = state.maxplayers;
-
         let history = server.history;
 
         history.push(players);
-        if (history.length > historySize) history.shift();
+        if (history.length > historySize) {
+            history.shift();
+        }
+
         server.name = state.name;
         server.players = players;
         server.maxPlayers = maxPlayers;
         server.querying = false;
         server.failed = false;
-
-    }).catch(() => {
+    } catch (e) {
         server.querying = false;
         server.failed = true;
-    });
+    }
+}
+
+async function queryServers() {
+    let now = (new Date).getTime();
+
+    let oldest = Object.keys(servers).map((addr) => {
+        const server = servers[addr];
+
+        return {
+            addr: addr,
+            age: now - (server.lastUpdated || 0),
+        };
+    }).sort((a, b) => b.age - a.age);
+
+    oldest = oldest[0].addr;
+
+    updateServer(oldest)
 }
 
 fetchSessionForIp('177.54.150.15', processServersInIp);
