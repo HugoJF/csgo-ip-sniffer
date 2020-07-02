@@ -1,12 +1,10 @@
 import logUpdate from 'log-update';
 import request from 'request';
-import math from 'mathjs';
 import Gamedig from 'gamedig';
 import chalk from 'chalk';
 import sparkly from "sparkly";
 import Table from 'cli-table';
 import termSize from "term-size";
-
 
 let servers = [];
 
