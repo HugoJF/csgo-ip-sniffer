@@ -124,7 +124,6 @@ async function updateServer(addr) {
     let [host, port] = splitAddress(addr);
 
     try {
-
         server.lastUpdated = now;
         server.querying = true;
 
@@ -158,14 +157,10 @@ async function updateServer(addr) {
 async function queryServers() {
     let now = (new Date).getTime();
 
-    let oldest = Object.keys(servers).map((addr) => {
-        const server = servers[addr];
-
-        return {
-            addr: addr,
-            age: now - (server.lastUpdated || 0),
-        };
-    }).sort((a, b) => b.age - a.age);
+    let oldest = Object.keys(servers).map((addr) => ({
+        addr: addr,
+        age: now - (servers[addr].lastUpdated || 0),
+    })).sort((a, b) => b.age - a.age);
 
     oldest = oldest[0].addr;
 
