@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import sparkly from "sparkly";
 import Table from 'cli-table';
 import termSize from "term-size";
+import truncate from 'cli-truncate';
 
 let servers = [];
 
@@ -12,7 +13,6 @@ const frames = ['-', '\\', '|', '/'];
 const tick = '√';
 const cross = '×';
 const noName = '?';
-const ellipsis = '…';
 const historySize = 10;
 
 const options = {
@@ -91,15 +91,14 @@ function render() {
 
         let highlight = (text) => querying ? chalk.blue(text) : (failed ? chalk.red(text) : text);
         let status = querying ? frames[frame] : failed ? cross : tick;
-        let spark = sparkly(history, {minimum: 0, maximum: maxPlayers});
+        let spark = sparkly(history, {
+            minimum: 0,
+            maximum: Math.max(...history, maxPlayers)
+        });
 
         server.frame = rotate(increment(frame), 0, frames.length - 1);
-        players = `${players || '0'} players`;
-
-        name = name || noName;
-        if (name.length > nameColumns - 2) {
-            name = name.slice(0, nameColumns - 3) + ellipsis;
-        }
+        players = `${players || 0} players`;
+        name = truncate(name || noName, nameColumns - 2);
 
         let info = [
             chalk.green(status),
