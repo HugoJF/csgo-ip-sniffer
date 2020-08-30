@@ -34,8 +34,6 @@ async function queryServers() {
 
 async function start() {
     for (let [ip] of Object.entries(main().servers())) {
-        console.log(`Fetching servers for IP ${ip}`);
-
         let response = await axios.get(`http://api.steampowered.com/ISteamApps/GetServersAtAddress/v0001?addr=${ip}`);
 
         ips[ip] = response.data.response.servers

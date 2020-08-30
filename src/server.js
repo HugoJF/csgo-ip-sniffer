@@ -12,6 +12,7 @@ export default class Server {
         this.maxPlayers = 0;
         this.history = Array(this.historySize).fill(0);
         this.lastUpdated = null;
+        this.lastQueried = null;
         this.querying = null;
     }
 
@@ -26,6 +27,7 @@ export default class Server {
             await callback();
             this.failed = false;
             this.querying = false;
+            this.lastQueried = Date.now();
         } catch (e) {
             this.querying = false;
             this.failed = true;
